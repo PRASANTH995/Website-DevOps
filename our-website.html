@@ -2,114 +2,220 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Frontend Demo</title>
+<title>Calm Space</title>
 
 <style>
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: linear-gradient(135deg,#020617,#0f172a,#020617);
-    color: white;
-    font-family: system-ui;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg,#020617,#0f172a,#020617);
+  color: white;
+  font-family: system-ui;
+  padding: 30px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
-  .container {
-    text-align: center;
-  }
+h1 {
+  font-size: 44px;
+  font-weight: 700;
+  text-align: center;
+}
 
-  h1 {
-    font-size: 52px;
-    font-weight: 800;
-    margin-bottom: 40px;
-  }
+.subtitle {
+  text-align: center;
+  color: #94a3b8;
+}
 
-  button {
-    background: linear-gradient(90deg,#3b82f6,#9333ea);
-    border: none;
-    padding: 12px 28px;
-    border-radius: 999px;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    margin-bottom: 40px;
-    transition: transform 0.2s;
-  }
+.center {
+  text-align: center;
+}
 
-  button:hover {
-    transform: scale(1.05);
-  }
+button {
+  cursor: pointer;
+}
 
-  .cards {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+.breath-btn {
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(90deg,#60a5fa,#818cf8);
+  color: white;
+}
 
-  .card {
-    background: #111827;
-    border-radius: 20px;
-    padding: 20px;
-    width: 260px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    transition: transform 0.25s ease;
-  }
+.circle {
+  margin: auto;
+  border-radius: 50%;
+  background: radial-gradient(circle,#60a5fa,#1e3a8a);
+  box-shadow: 0 0 40px rgba(96,165,250,0.4);
+  transition: all 4s ease-in-out;
+}
 
-  .card:hover {
-    transform: translateY(-8px);
-  }
+.label {
+  margin-top: 16px;
+  color: #cbd5f5;
+}
 
-  .card p {
-    color: #9ca3af;
-    font-size: 14px;
-  }
+textarea {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #020617;
+  border: 1px solid #1f2937;
+  color: white;
+}
+
+.save-btn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #22c55e;
+  color: black;
+}
+
+.note {
+  background: #020617;
+  border: 1px solid #1f2937;
+  padding: 14px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<h1>Calm Space</h1>
+<p class="subtitle">A small place on the internet to breathe, reflect and feel lighter.</p>
 
-  <h1>Frontend Demo</h1>
-
-  <button id="powerBtn">
-    Click Counter: <span id="count">0</span>
+<div class="center" style="margin-top:20px;">
+  <button id="breathToggle" class="breath-btn">
+    Start Breathing Exercise
   </button>
+</div>
 
-  <div class="cards">
+<div id="breathingArea" class="center" style="margin-top:30px; display:none;">
+  <div id="circle" class="circle"></div>
+  <p id="phaseLabel" class="label"></p>
+</div>
 
-    <div class="card">
-      <h3>Fast</h3>
-      <p>Lightweight and responsive interface.</p>
-    </div>
+<div style="margin-top:50px;">
+  <h2>Gratitude Journal</h2>
+  <p style="color:#94a3b8;">Write one small good thing about today 🌱</p>
 
-    <div class="card">
-      <h3>Interactive</h3>
-      <p>Dynamic behavior using client-side scripting.</p>
-    </div>
-
-    <div class="card">
-      <h3>Deployable</h3>
-      <p>Works perfectly on any static hosting platform.</p>
-    </div>
-
+  <div id="moodSelector" style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="mood">🙂</button>
+    <button class="mood">😌</button>
+    <button class="mood">😊</button>
+    <button class="mood">😔</button>
+    <button class="mood">😴</button>
   </div>
 
+  <textarea id="noteInput" placeholder="Today I felt grateful for..."></textarea>
+
+  <button id="saveNote" class="save-btn">Save Thought</button>
+
+  <div id="notesContainer" style="margin-top:30px;"></div>
 </div>
 
 <script>
-let count = 0;
-const btn = document.getElementById("powerBtn");
-const countText = document.getElementById("count");
+let running = false;
+let phase = "inhale";
+let interval = null;
+let mood = "🙂";
 
-btn.addEventListener("click", () => {
-  count++;
-  countText.textContent = count;
+const circle = document.getElementById("circle");
+const label = document.getElementById("phaseLabel");
+const breathingArea = document.getElementById("breathingArea");
+const toggleBtn = document.getElementById("breathToggle");
+const noteInput = document.getElementById("noteInput");
+const notesContainer = document.getElementById("notesContainer");
+
+let notes = JSON.parse(localStorage.getItem("gratitude") || "[]");
+
+function updateCircle() {
+  let size = phase === "inhale" ? 220 : phase === "hold" ? 240 : 160;
+  let text = phase === "inhale" ? "Breathe In"
+           : phase === "hold" ? "Hold"
+           : "Breathe Out";
+
+  circle.style.width = size + "px";
+  circle.style.height = size + "px";
+  label.textContent = text;
+}
+
+function startBreathing() {
+  breathingArea.style.display = "block";
+  updateCircle();
+
+  interval = setInterval(() => {
+    phase = phase === "inhale" ? "hold"
+          : phase === "hold" ? "exhale"
+          : "inhale";
+    updateCircle();
+  }, 4000);
+}
+
+function stopBreathing() {
+  clearInterval(interval);
+  breathingArea.style.display = "none";
+  phase = "inhale";
+}
+
+toggleBtn.addEventListener("click", () => {
+  running = !running;
+  toggleBtn.textContent = running
+    ? "Stop Breathing Exercise"
+    : "Start Breathing Exercise";
+
+  running ? startBreathing() : stopBreathing();
 });
+
+document.querySelectorAll(".mood").forEach(btn => {
+  btn.addEventListener("click", () => {
+    mood = btn.textContent;
+  });
+});
+
+function renderNotes() {
+  notesContainer.innerHTML = "";
+  notes.forEach(n => {
+    const div = document.createElement("div");
+    div.className = "note";
+    div.innerHTML = `
+      <div style="font-size:20px;">${n.mood}</div>
+      <div>${n.text}</div>
+      <div class="timestamp">${n.time}</div>
+    `;
+    notesContainer.appendChild(div);
+  });
+}
+
+document.getElementById("saveNote").addEventListener("click", () => {
+  if (!noteInput.value.trim()) return;
+
+  const newNote = {
+    text: noteInput.value,
+    mood: mood,
+    time: new Date().toLocaleString()
+  };
+
+  notes.unshift(newNote);
+  localStorage.setItem("gratitude", JSON.stringify(notes));
+  noteInput.value = "";
+  renderNotes();
+});
+
+renderNotes();
 </script>
 
 </body>
